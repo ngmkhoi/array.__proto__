@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Array Prototypes Enhanced</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .method-section {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            padding: 25px;
+            transition: transform 0.2s ease-in-out;
+        }
+        .method-section:hover {
+            transform: translateY(-5px);
+        }
+        .method-section h2 {
+            color: #3498db;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .code-block, .output-block {
+            margin-bottom: 20px;
+        }
+        .code-block h3, .output-block h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        pre {
+            background-color: #2d2d2d; /* Dark background for code */
+            color: #f8f8f2; /* Light text for code */
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            line-height: 1.4;
+            tab-size: 4;
+            -moz-tab-size: 4;
+        }
+        .console-output {
+            background-color: #1a1a1a; /* Even darker for console output */
+            color: #a2f98e; /* Greenish text for output */
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        .explanation {
+            background-color: #e8f4f8;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .explanation h3 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Custom Array Prototypes</h1>
+
+    <div id="content-area">
+        </div>
+
+    <script>
+        // Store original console.log
+        const originalConsoleLog = console.log;
+        const capturedOutputs = {};
+        let currentMethodSection = '';
+
+        // Override console.log to capture output for specific sections
+        console.log = function(...args) {
+            if (currentMethodSection) {
+                if (!capturedOutputs[currentMethodSection]) {
+                    capturedOutputs[currentMethodSection] = '';
+                }
+                capturedOutputs[currentMethodSection] += args.map(a => JSON.stringify(a, null, 2)).join(' ') + '\n';
+            }
+            originalConsoleLog.apply(console, args); // Also log to real console
+        };
+
+        // Function to extract code blocks and run them sequentially
+        async function loadAndDisplayMethods() {
+            const response = await fetch('main.js');
+            const code = await response.text();
+
+            const methodSections = code.split('console.log(\'----------------------------------------------------\');');
+
+            const contentArea = document.getElementById('content-area');
+
+            for (let i = 0; i < methodSections.length; i++) {
+                let sectionCode = methodSections[i].trim();
+                if (!sectionCode) continue;
+
+                // Extract method name (heuristic: first line starting with Array.prototype or similar)
+                let methodName = 'Unknown Method';
+                const firstLine = sectionCode.split('\n')[0];
+                if (firstLine.includes('Array.prototype.')) {
+                    methodName = firstLine.split('Array.prototype.')[1].split(' ')[0].split('=')[0].split('(')[0];
+                    if (methodName.endsWith('2')) {
+                        methodName = methodName.replace('2', '()'); // Normalize for display
+                    } else if (methodName.includes('(')) {
+                        methodName = methodName.split('(')[0] + '()';
+                    }
+                } else if (firstLine.includes('//push()')) {
+                    methodName = 'push2()';
+                } else if (firstLine.includes('//- map()')) {
+                    methodName = 'map2()';
+                } else if (firstLine.includes('//- reduce()')) {
+                    methodName = 'reduce2()';
+                } else if (firstLine.includes('//- forEach()')) {
+                    methodName = 'forEach2()';
+                } else if (firstLine.includes('//find()')) {
+                    methodName = 'find2()';
+                } else if (firstLine.includes('//findIndex()')) {
+                    methodName = 'findIndex2()';
+                } else if (firstLine.includes('//filter()')) {
+                    methodName = 'filter2()';
+                }
+
+
+                currentMethodSection = methodName; // Set current section for log capture
+
+                // Dynamically execute the code for each section
+                try {
+                    const script = document.createElement('script');
+                    script.textContent = sectionCode;
+                    document.body.appendChild(script);
+                    document.body.removeChild(script); // Clean up the script tag
+                } catch (e) {
+                    originalConsoleLog("Error executing section for " + methodName + ":", e);
+                    capturedOutputs[methodName] = (capturedOutputs[methodName] || '') + `Error: ${e.message}\n`;
+                }
+
+                // Create the HTML structure for this method
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'method-section';
+                sectionDiv.innerHTML = `
+                    <h2>${methodName}</h2>
+                    <div class="code-block">
+                        <h3>Mã nguồn:</h3>
+                        <pre>${escapeHtml(sectionCode)}</pre>
+                    </div>
+                    <div class="output-block">
+                        <h3>Kết quả Console:</h3>
+                        <pre class="console-output">${escapeHtml(capturedOutputs[methodName] || 'Không có output.')}</pre>
+                    </div>
+                    <div class="explanation">
+                        <h3>Giải thích:</h3>
+                        <p>${getExplanation(methodName)}</p>
+                    </div>
+                `;
+                contentArea.appendChild(sectionDiv);
+            }
+            console.log = originalConsoleLog; // Restore original console.log
+        }
+
+        // Helper to escape HTML for pre tags
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Function to provide explanations (you can expand this with more detailed info)
+        function getExplanation(methodName) {
+            switch (methodName) {
+                case 'push2()':
+                    return 'Phương thức `push2` thêm một giá trị mới vào cuối mảng bằng cách gán giá trị vào vị trí có chỉ số bằng độ dài hiện tại của mảng, sau đó JavaScript sẽ tự động cập nhật độ dài.';
+                case 'map2()':
+                    return 'Phương thức `map2` tạo ra một mảng mới bằng cách áp dụng một hàm callback cho mỗi phần tử trong mảng gốc. Nó chỉ xử lý các chỉ số thực sự tồn tại trong mảng.';
+                case 'reduce2()':
+                    return 'Phương thức `reduce2` thực thi một hàm callback (reducer) trên từng phần tử của mảng để tạo ra một giá trị duy nhất. Nó có thể nhận một giá trị khởi tạo.';
+                case 'forEach2()':
+                    return 'Phương thức `forEach2` thực thi hàm callback được cung cấp một lần cho mỗi phần tử trong mảng theo thứ tự. Nó bỏ qua các lỗ hổng trong sparse arrays.';
+                case 'find2()':
+                    return 'Phương thức `find2` trả về giá trị của phần tử đầu tiên trong mảng thỏa mãn điều kiện kiểm tra của hàm callback. Nếu không tìm thấy, nó trả về `undefined`.';
+                case 'findIndex2()':
+                    return 'Phương thức `findIndex2` trả về chỉ số của phần tử đầu tiên trong mảng thỏa mãn điều kiện kiểm tra của hàm callback. Nếu không tìm thấy, nó trả về `-1`.';
+                case 'filter2()':
+                    return 'Phương thức `filter2` tạo ra một mảng mới chứa tất cả các phần tử của mảng gốc mà thỏa mãn điều kiện kiểm tra của hàm callback.';
+                default:
+                    return 'Đây là một phương thức Array.prototype được triển khai tùy chỉnh.';
+            }
+        }
+
+        window.addEventListener('load', loadAndDisplayMethods);
+    </script>
+</body>
+</html>
