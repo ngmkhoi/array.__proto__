@@ -51,6 +51,11 @@ console.log('----------------------------------------------------');
 //- reduce() – Tính giá trị duy nhất từ mảng
 Array.prototype.reduce2 = function(callback, initialValue){
     const length = this.length
+
+    if (length === 0 && initialValue === undefined) {
+        throw new TypeError('Reduce of empty array with no initial value');
+    }
+
     let accumulator = initialValue;
     for(let i = 0; i < length; i++){
         if(i in this){
@@ -64,11 +69,11 @@ Array.prototype.reduce2 = function(callback, initialValue){
     return accumulator;
 }
 
-const numbersR = [1, 2, 3, 4];
-const sumR = numbersR.reduce((total, number, index, arr) => {
+const numbersR = [1,2,3, , ,5,6];
+const sumR = numbersR.reduce2((total, number, index, arr) => {
     console.log(`Index ${index}: total = ${total}, number = ${number}`);
     return total + number;
-}, 0); // initialValue là 0
+}); 
 
 console.log(sumR); // Kết quả: 10
 
